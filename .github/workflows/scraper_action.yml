@@ -1,71 +1,45 @@
-# scraper_action.yml - The brain of our automation (v4 Compatible)
-# Iska wahid maqsad GitHub Actions ke zariye Google Maps scraper ko run karna hai.
+# scraper_action.yml (Version 2.1 - Path Fix)
 
-# Workflow ka naam jo GitHub Actions ke UI mein nazar aayega
 name: Run Google Maps Scraper
 
-# Yeh Action kab chalega?
 on:
-  # Is 'workflow_dispatch' se GitHub par ek "Run workflow" ka button ban jayega
-  # jise aap manually click karke chala sakte hain.
   workflow_dispatch:
     inputs:
-      # Yeh button ke saath ek input field banayega jahan user apni query likhega
       search_query:
         description: 'Enter the search query (e.g., real estate in Kuwait)'
         required: true
         default: 'restaurants in Dubai'
 
-# Tamam jobs jo is workflow mein chalenge
 jobs:
-  # Humne ek hi job banaya hai jiska naam 'scrape' hai
   scrape:
-    # Yeh job kahan chalega? GitHub ke diye gaye Ubuntu (Linux) server par
     runs-on: ubuntu-latest
 
-    # Is job ke andar chalne walay tamam steps
     steps:
-      # Step 1: Hamari repository ka code is virtual machine par copy karo
-      # Hum latest version (v4) istemal kar rahe hain
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # Step 2: Python ko setup karo
-      # Hum latest version (v5) istemal kar rahe hain
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # Python ka version
+          python-version: '3.10'
 
-      # Step 3: Tamam zaroori Python libraries install karo
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Hamara Python script chalao
       - name: Run Scraper
         run: python scraper_for_actions.py
         env:
-          # Yahan hum user ke diye gaye input ko 'SEARCH_QUERY' naam ke
-          # environment variable mein daal rahe hain taake Python script usay parh sake.
           SEARCH_QUERY: ${{ github.event.inputs.search_query }}
 
-      # Step 5: Natijay (CSV file) ko upload karo
       - name: Upload results as artifact
-        # =================================================
-        # === YEH HAI ASAL FIX ===
-        # Hum purane 'v3' ke bajaye naye 'v4' ka istemal kar rahe hain.
-        uses: actions/upload-artifact@v4 
-        # =================================================
+        uses: actions/upload-artifact@v4
         with:
-          # Artifact ka naam, jismein hum query aur run ID shamil kar rahe hain
-          # taake har file ka naam unique ho.
           name: gmaps-leads-${{ github.event.inputs.search_query }}-${{ github.run_id }}
-          
-          # Kaun si file upload karni hai.
-          path: gmaps_final_leads.csv
-          
-          # Is artifact ko kitne din tak save rakhna hai.
+          # =================================================
+          # === YEH HAI ASAL FIX ===
+          # Humne ghalat naam 'gmaps_final_leads.csv' ko theek karke 'gmaps_leads.csv' kar diya hai.
+          path: gmaps_leads.csv
+          # =================================================
           retention-days: 5
-
