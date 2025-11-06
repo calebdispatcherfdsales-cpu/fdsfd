@@ -1,5 +1,5 @@
-# scraper_for_actions.py (Version 7.2 - Import Fix & Test Mode)
-# Ismein 'Service' ka zaroori import add kiya gaya hai.
+# scraper_for_actions.py (Version 8.0 - Full Scale Production)
+# Ismein se Test Mode hata diya gaya hai.
 
 import time
 import pandas as pd
@@ -9,18 +9,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-
-# =================================================================
-# === YEH HAIN WOH ZAROORI IMPORTS JO MISSING THAY ===
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-# =================================================================
 
 # --- CONFIGURATION ---
 OUTPUT_CSV_FILE = 'gmaps_leads.csv'
-MAX_BUSINESSES_TO_SCRAPE = 10 # Test Mode: Sirf 10 businesses scrape karega
+# MAX_BUSINESSES_TO_SCRAPE = 10 # <<< IS LINE KO COMMENT OUT YA DELETE KAR DEIN
 
-# (Baaki tamam scraping functions bilkul waisay hi rahenge)
+# ... (baaki tamam code bilkul waisa hi rahega, koi tabdeeli nahi)
+# ... (scroll_to_load_all_results, get_all_business_links, etc.)
 
 def scroll_to_load_all_results(driver):
     try:
@@ -100,7 +97,7 @@ def main():
     if not search_query:
         print("Error: SEARCH_QUERY environment variable not set.")
         return
-    print(f"Starting scraper for query: '{search_query}' in TEST MODE")
+    print(f"Starting scraper for query: '{search_query}'")
     
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
@@ -110,7 +107,6 @@ def main():
     options.add_argument("--disable-dev-shm-usage")
     
     try:
-        # Ab yeh line theek se kaam karegi
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         driver.set_page_load_timeout(30) 
     except Exception as e:
@@ -129,11 +125,14 @@ def main():
         driver.quit()
         return
     
-    links_to_scrape = business_links[:MAX_BUSINESSES_TO_SCRAPE]
+    # === TEST MODE REMOVED ===
+    # Ab yeh poori list ko scrape karega
+    links_to_scrape = business_links
+    # =========================
     
     all_business_details = []
     total_links = len(links_to_scrape)
-    print(f"\nStep 2/3: Scraping details for {total_links} businesses (Test Mode)...")
+    print(f"\nStep 2/3: Scraping details for {total_links} businesses...")
 
     for i, link in enumerate(links_to_scrape):
         print(f"  -> Scraping business {i+1}/{total_links}...")
@@ -152,7 +151,7 @@ def main():
 
         df.to_csv(OUTPUT_CSV_FILE, index=False, encoding='utf-8-sig')
         print(f"\n--- SCRAPING COMPLETE! ---")
-        print(f"Successfully scraped {len(all_business_details)} businesses.")
+        print(f"Successfully scraped {len(df)} unique businesses.")
         print(f"Data has been saved to '{OUTPUT_CSV_FILE}'.")
     else:
         print("\nCould not scrape any detailed business information.")
