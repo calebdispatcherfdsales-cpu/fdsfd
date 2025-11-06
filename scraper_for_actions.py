@@ -1,45 +1,18 @@
-# scraper_for_actions.py (Version 7.0 - GitHub Actions Ready)
-# Yeh script ab search query 'input()' ke bajaye environment variable se leta hai.
+# scraper_for_actions.py (Version 7.1 - Test Mode Enabled)
 
 import time
 import pandas as pd
-import os # <<< YEH IMPORT ADD KAREIN
+import os
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+# ... (baaki tamam imports waisay hi)
 from selenium.common.exceptions import TimeoutException
 
 # --- CONFIGURATION ---
-# Output file ka naam ab keyword ke hisab se banega
-OUTPUT_CSV_FILE = 'gmaps_leads.csv' 
+OUTPUT_CSV_FILE = 'gmaps_leads.csv'
+# === TEST MODE CONFIGURATION ===
+MAX_BUSINESSES_TO_SCRAPE = 10 # <<< YEH LINE ADD KAREIN
 
-# (Baaki tamam scraping functions bilkul waisay hi rahenge)
-def scroll_to_load_all_results(driver):
-    # ... (No change here)
-    try:
-        wait = WebDriverWait(driver, 15)
-        scrollable_list = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div[role="feed"]')))
-        last_height = driver.execute_script("return arguments[0].scrollHeight", scrollable_list)
-        scroll_attempts = 0
-        print("Step 1/3: Scrolling Google Maps to load all results...")
-        while True:
-            driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_list)
-            time.sleep(3)
-            new_height = driver.execute_script("return arguments[0].scrollHeight", scrollable_list)
-            if new_height == last_height:
-                print("  -> Scrolling complete. All results loaded.")
-                return True
-            last_height = new_height
-            scroll_attempts += 1
-            if scroll_attempts > 100:
-                print("  -> Max scroll limit (100) reached.")
-                return True
-    except TimeoutException:
-        print("  -> ERROR: Could not find the results panel to scroll.")
-        return False
+# ... (scroll_to_load_all_results aur get_all_business_links mein koi tabdeeli nahi)
 
 def get_all_business_links(driver):
     # ... (No change here)
@@ -95,21 +68,19 @@ def scrape_individual_business_page(driver, url):
     return data
 
 def main():
-    # === YEH HISSA BADAL DIYA GAYA HAI ===
-    # Ab hum input() ke bajaye environment variable se query lenge
+    # ... (main function ka shuru ka hissa waisa hi)
     search_query = os.environ.get('SEARCH_QUERY')
     if not search_query:
         print("Error: SEARCH_QUERY environment variable not set.")
         return
-    print(f"Starting scraper for query: '{search_query}'")
-    # ======================================
-
+    print(f"Starting scraper for query: '{search_query}' in TEST MODE")
+    
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     options.add_argument("--window-size=1366,768")
     options.add_argument("--lang=en-US")
-    options.add_argument("--no-sandbox") # <<< YEH LINUX SERVER KE LIYE ZAROORI HAI
-    options.add_argument("--disable-dev-shm-usage") # <<< YEH BHI LINUX SERVER KE LIYE ZAROORI HAI
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -130,11 +101,16 @@ def main():
         driver.quit()
         return
     
+    # === TEST MODE IMPLEMENTATION ===
+    # Ab hum poori list ke bajaye sirf pehle 10 links scrape karenge
+    links_to_scrape = business_links[:MAX_BUSINESSES_TO_SCRAPE]
+    # ==============================
+    
     all_business_details = []
-    total_links = len(business_links)
-    print(f"\nStep 2/3: Scraping details for {total_links} businesses...")
+    total_links = len(links_to_scrape) # total_links ab 10 hoga
+    print(f"\nStep 2/3: Scraping details for {total_links} businesses (Test Mode)...")
 
-    for i, link in enumerate(business_links):
+    for i, link in enumerate(links_to_scrape):
         print(f"  -> Scraping business {i+1}/{total_links}...")
         details = scrape_individual_business_page(driver, link)
         if details:
@@ -149,7 +125,6 @@ def main():
         column_order = ['Business Name', 'Website', 'Phone Number', 'Rating', 'Reviews', 'Category', 'Address', 'Plus Code']
         df = df.reindex(columns=column_order)
 
-        # File ka naam ab hamesha 'gmaps_final_leads.csv' hoga
         df.to_csv(OUTPUT_CSV_FILE, index=False, encoding='utf-8-sig')
         print(f"\n--- SCRAPING COMPLETE! ---")
         print(f"Successfully scraped {len(all_business_details)} businesses.")
