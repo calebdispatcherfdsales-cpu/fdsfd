@@ -1,8 +1,9 @@
-# batch_action.yml - The brain of our Batch Processing Factory (Filename Fix)
+# run_scraper.yml - The brain of our Batch Processing Factory (Final Version)
 
 name: Run Batch Scraper
 
 on:
+  # Isay manually "Run workflow" button se chalaya ja sakta hai
   workflow_dispatch:
 
 jobs:
@@ -28,11 +29,8 @@ jobs:
 
       # Step 4: Batch scraper script chalao
       - name: Run Batch Scraper
-        # =================================================
-        # === YEH HAI ASAL FIX ===
-        # Humne yahan script ka naam theek kar diya hai.
-        run: python batch_scraper_for_actions.py
-        # =================================================
+        # Yahan humne script ka naam theek kar diya hai
+        run: python batch_scraper.py
 
       # Step 5: Git ko configure karo
       - name: Configure Git
@@ -44,7 +42,9 @@ jobs:
       - name: Commit and push results
         run: |
           git pull
-          git add BATCH_SCRAPING_RESULTS/*
+          # 'output' folder ko add karo
+          git add output/*
+          # Check karo ke commit karne ke liye kuch hai ya nahi
           if ! git diff --staged --quiet; then
             git commit -m "Add scraped data from batch process"
             git push
