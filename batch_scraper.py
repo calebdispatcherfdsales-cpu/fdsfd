@@ -1,5 +1,5 @@
-# batch_scraper_for_actions.py (Version 2.0 - GitHub Actions Ready)
-# Ismein Linux server ke liye zaroori options add kiye gaye hain.
+# batch_scraper.py (Version 9.0 - Final Production Version for GitHub Actions)
+# Yeh script keywords.txt se tamam keywords utha kar un par aik aik karke scraping karta hai.
 
 import time
 import pandas as pd
@@ -14,17 +14,17 @@ from selenium.common.exceptions import TimeoutException
 
 # --- CONFIGURATION ---
 KEYWORDS_FILE = 'keywords.txt'
-OUTPUT_FOLDER = 'BATCH_SCRAPING_RESULTS' 
+OUTPUT_FOLDER = 'output' # Folder ka naam aasan kar diya hai
 
-# (Baaki tamam scraping functions bilkul waisay hi rahenge)
 def scroll_to_load_all_results(driver):
-    # ... (No change here)
+    """Results ki list ko aakhir tak scroll karke tamam businesses load karta hai."""
     try:
         wait = WebDriverWait(driver, 15)
         scrollable_list = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div[role="feed"]')))
         last_height = driver.execute_script("return arguments[0].scrollHeight", scrollable_list)
         scroll_attempts = 0
         print("  -> Scrolling to load all results...")
+        
         while True:
             driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_list)
             time.sleep(3)
@@ -42,7 +42,7 @@ def scroll_to_load_all_results(driver):
         return False
 
 def get_all_business_links(driver):
-    # ... (No change here)
+    """Page par maujood tamam businesses ke Google Maps links nikalta hai."""
     links = []
     try:
         business_elements = driver.find_elements(By.CSS_SELECTOR, 'a[href*="https://www.google.com/maps/place/"]' )
@@ -58,7 +58,7 @@ def get_all_business_links(driver):
         return []
 
 def scrape_individual_business_page(driver, url):
-    # ... (No change here)
+    """Ek business ke page par jaakar mukammal details nikalta hai."""
     driver.get(url)
     data = {}
     try:
@@ -93,6 +93,7 @@ def scrape_individual_business_page(driver, url):
     return data
 
 def main():
+    """Main function to run the batch scraping process."""
     try:
         with open(KEYWORDS_FILE, 'r', encoding='utf-8') as f:
             keywords = [line.strip() for line in f if line.strip()]
@@ -108,14 +109,12 @@ def main():
 
     print(f"Found {len(keywords)} keywords. Starting batch process...")
 
-    # === YEH HISSA BADAL DIYA GAYA HAI ===
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     options.add_argument("--window-size=1366,768")
     options.add_argument("--lang=en-US")
-    options.add_argument("--no-sandbox") # Zaroori for Linux servers
-    options.add_argument("--disable-dev-shm-usage") # Zaroori for Linux servers
-    # ======================================
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -128,7 +127,11 @@ def main():
         print(f"\n--- Processing Keyword {i+1}/{len(keywords)}: '{keyword}' ---")
         
         search_url = f"https://www.google.com/maps/search/{keyword.replace(' ', '+' )}"
-        driver.get(search_url)
+        try:
+            driver.get(search_url)
+        except Exception as e:
+            print(f"  ! ERROR navigating to search page for '{keyword}': {e}")
+            continue
         
         if not scroll_to_load_all_results(driver):
             print(f"  ! Skipping keyword '{keyword}' due to scrolling error.")
@@ -159,7 +162,7 @@ def main():
             output_path = os.path.join(OUTPUT_FOLDER, f"leads_{safe_filename}.csv")
             
             df.to_csv(output_path, index=False, encoding='utf-8-sig')
-            print(f"  -> SUCCESS: Saved {len(all_business_details)} leads to '{output_path}'")
+            print(f"  -> SUCCESS: Saved {len(df)} unique leads to '{output_path}'")
         else:
             print(f"  ! Could not scrape any details for keyword '{keyword}'.")
 
