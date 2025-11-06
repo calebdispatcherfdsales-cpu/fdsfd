@@ -1,35 +1,43 @@
-# scraper_action.yml - The brain of our automation
+# scraper_action.yml - The brain of our automation (v4 Compatible)
+# Iska wahid maqsad GitHub Actions ke zariye Google Maps scraper ko run karna hai.
 
+# Workflow ka naam jo GitHub Actions ke UI mein nazar aayega
 name: Run Google Maps Scraper
 
 # Yeh Action kab chalega?
 on:
   # Is 'workflow_dispatch' se GitHub par ek "Run workflow" ka button ban jayega
+  # jise aap manually click karke chala sakte hain.
   workflow_dispatch:
     inputs:
-      # Yeh button ke saath ek input field banayega
+      # Yeh button ke saath ek input field banayega jahan user apni query likhega
       search_query:
         description: 'Enter the search query (e.g., real estate in Kuwait)'
         required: true
         default: 'restaurants in Dubai'
 
+# Tamam jobs jo is workflow mein chalenge
 jobs:
+  # Humne ek hi job banaya hai jiska naam 'scrape' hai
   scrape:
-    # Yeh job kahan chalega? GitHub ke Ubuntu server par
+    # Yeh job kahan chalega? GitHub ke diye gaye Ubuntu (Linux) server par
     runs-on: ubuntu-latest
 
+    # Is job ke andar chalne walay tamam steps
     steps:
-      # Step 1: Hamari repository ka code is machine par copy karo
+      # Step 1: Hamari repository ka code is virtual machine par copy karo
+      # Hum latest version (v4) istemal kar rahe hain
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Step 2: Python ko setup karo
+      # Hum latest version (v5) istemal kar rahe hain
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10' # Python ka version
 
-      # Step 3: Tamam zaroori libraries install karo
+      # Step 3: Tamam zaroori Python libraries install karo
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -39,13 +47,25 @@ jobs:
       - name: Run Scraper
         run: python scraper_for_actions.py
         env:
-          # Yahan hum user ke diye gaye input ko environment variable bana rahe hain
+          # Yahan hum user ke diye gaye input ko 'SEARCH_QUERY' naam ke
+          # environment variable mein daal rahe hain taake Python script usay parh sake.
           SEARCH_QUERY: ${{ github.event.inputs.search_query }}
 
       # Step 5: Natijay (CSV file) ko upload karo
       - name: Upload results as artifact
-        uses: actions/upload-artifact@v3
+        # =================================================
+        # === YEH HAI ASAL FIX ===
+        # Hum purane 'v3' ke bajaye naye 'v4' ka istemal kar rahe hain.
+        uses: actions/upload-artifact@v4 
+        # =================================================
         with:
-          name: gmaps-leads-${{ github.event.inputs.search_query }}
+          # Artifact ka naam, jismein hum query aur run ID shamil kar rahe hain
+          # taake har file ka naam unique ho.
+          name: gmaps-leads-${{ github.event.inputs.search_query }}-${{ github.run_id }}
+          
+          # Kaun si file upload karni hai.
           path: gmaps_final_leads.csv
+          
+          # Is artifact ko kitne din tak save rakhna hai.
+          retention-days: 5
 
