@@ -1,0 +1,53 @@
+# batch_action.yml - The brain of our Batch Processing Factory
+
+name: Run Batch Scraper
+
+on:
+  # Isay manually "Run workflow" button se chalaya ja sakta hai
+  workflow_dispatch:
+
+jobs:
+  batch-scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Code copy karo
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Python setup karo
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Step 3: Libraries install karo
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: Batch scraper script chalao
+      # Yeh script ab khud hi keywords.txt parhega aur BATCH_SCRAPING_RESULTS folder banayega
+      - name: Run Batch Scraper
+        run: python batch_scraper_for_actions.py
+
+      # Step 5: Git ko configure karo
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions-bot@github.com'
+
+      # Step 6: Naye banaye gaye folder aur uski files ko commit aur push karo
+      - name: Commit and push results
+        run: |
+          git pull
+          # BATCH_SCRAPING_RESULTS folder ko add karo
+          git add BATCH_SCRAPING_RESULTS/*
+          # Check karo ke commit karne ke liye kuch hai ya nahi
+          if ! git diff --staged --quiet; then
+            git commit -m "Add scraped data from batch process"
+            git push
+          else
+            echo "No new files to commit."
+          fi
